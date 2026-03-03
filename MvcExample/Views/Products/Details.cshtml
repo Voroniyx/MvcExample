@@ -1,0 +1,14 @@
+﻿@model MvcExample.Models.ProductDetailsViewModel
+
+<h1>@Model.Name</h1>
+
+<p>Price (with tax): @Model.FinalPrice.ToString("C")</p>
+
+@if (Model.IsLowStock)
+{
+    <div class="text-danger">
+        HURRY! Only @Model.Stock left!
+    </div>
+}
+
+<p>Shipping Estimate: @Model.EstimatedShippingDays days</p>

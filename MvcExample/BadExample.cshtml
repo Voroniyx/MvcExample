@@ -1,0 +1,53 @@
+﻿@page
+@using Microsoft.Data.SqlClient
+@using MvcExample
+@using Newtonsoft.Json
+@inject IConfiguration Config
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Page</title>
+</head>
+<body>
+@{
+    
+    
+    var productId = Request.Query["id"];
+    var connectionString = Config.GetConnectionString("DefaultConnection");
+    ProductObj product = null;
+
+    await using (var conn = new SqlConnection(connectionString))
+    {
+        var cmd = new SqlCommand($"SELECT * FROM Products WHERE Id = {productId}", conn);
+        conn.Open();
+        var reader = await cmd.ExecuteReaderAsync();
+        if (reader.Read())
+        {
+            product = new ProductObj { 
+                Name = reader["Name"].ToString(), 
+                Price = (decimal)reader["Price"],
+                Stock = (int)reader["StockQty"]
+            };
+        }
+    }
+
+    const decimal taxRate = 0.15m;
+    var finalPrice = product.Price + (product.Price * taxRate);
+        
+    var client = new HttpClient();
+    var shippingResponse = await client.GetStringAsync("https://api.shipper.com/rates/" + productId);
+    var shippingData = JsonConvert.DeserializeObject<ShippingResponse>(shippingResponse);
+}
+
+<h1>@product.Name</h1>
+<p>Price (with tax): @finalPrice.ToString("C")</p>
+    
+@if (product.Stock < 5)
+{
+    <div style="color:red">HURRY! Only @product.Stock left!</div>
+}
+
+<p>Shipping Estimate: @shippingData.estimatedDays days</p>
+</body>
+</html>
